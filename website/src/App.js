@@ -1,24 +1,31 @@
-import logo from './logo.svg';
 import './App.css';
 
 function App() {
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
+    <div style={{ justifyContent: 'center' }}><center>
+    <h1>Login Page</h1>
+    <table>
+        <tr>
+            <td>User ID:</td>
+            <td>
+                <input type="text" name="userID"></input>
+            </td>
+        </tr>
+        <tr>
+            <td>Password:</td>
+            <td>
+                <input type="password" name="password"></input>
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <input type="submit" name="submit" value="login"></input>
+            </td>
+        </tr>
+    </table>
+    <a href="{{url_for('register')}}">Register Here</a>
+    </center>
+</div>
   );
 }
 
