@@ -26,10 +26,19 @@ def signup():
     if users_collection.find_one({'userID': userId}):
         return jsonify({'error': 'User already exists'})
     
+    filter = {"name": "HWSet1"}
+    new_values = {f"userHardware.{userId}": 0}
+    db2['HWSet1'].update_one(filter, { "$set": new_values})
+
+    filter = {"name": "HWSet2"}
+    new_values = {f"userHardware.{userId}": 0}
+    db2['HWSet2'].update_one(filter, { "$set": new_values})
+
     encrypt = cipher.encrypt(password, 4, -1)
+    encryptId = cipher.encrypt(userId, 4, -1)
 
     post = {
-        "userID": userId,
+        "userID": encryptId,
         "password": encrypt,
         "projects": []
     }
@@ -45,7 +54,8 @@ def login():
     password = request.json['password']
 
     # find user in the database
-    user = users_collection.find_one({'userID': userId})
+    encryptId = cipher.encrypt(userId, 4, -1)
+    user = users_collection.find_one({'userID': encryptId})
 
     # check if user exists
     if not user:
@@ -62,7 +72,8 @@ def login():
 @app.route('/home', methods=['POST'])
 def home():
     userId = request.json['userId']
-    document = users_collection.find_one({'userID': userId})
+    idencrypt = cipher.encrypt(userId, 4, -1)
+    document = users_collection.find_one({'userID': idencrypt})
     array = document['projects']
 
     documents = project_collection.find({'id': {'$in': array}})
@@ -76,6 +87,7 @@ def home():
 def join():
     projectId = request.json['projectId']
     userId = request.json['userId']
+    idencrypt = cipher.encrypt(userId, 4, -1)
     project = project_collection.find_one({'id': projectId})
     if not project:
         return jsonify({'error': 'Project not found'})
@@ -90,7 +102,7 @@ def join():
     )
 
     users_collection.update_one(
-        {'userID': userId},
+        {'userID': idencrypt},
         {'$push': {'projects': projectId}}
     )
 
@@ -101,6 +113,7 @@ def join():
 def leave():
     projectId = request.json['projectId']
     userId = request.json['userId']
+    idencrypt = cipher.encrypt(userId, 4, -1)
     project = project_collection.find_one({'id': projectId})
     if not project:
         return jsonify({'error': 'Project not found'})
@@ -111,7 +124,7 @@ def leave():
     )
 
     users_collection.update_one(
-        {'userID': userId},
+        {'userID': idencrypt},
         {'$pull': {'projects': projectId}}
     )
 
@@ -136,6 +149,7 @@ def get_num_hardware():
 def checkout():
     name = request.json['name']
     number = request.json['change']
+    id = request.json['userId']
     integer = int(number)
     document = db2[name].find_one({'name': name})
     avail = document['availability']
@@ -145,22 +159,48 @@ def checkout():
     new_avail = avail - integer
     new_values = {'$set': {'availability': new_avail}}
     db2[name].update_one(query, new_values)
+
+    result = db2[name].find_one(query)
+    currentValue = result["userHardware"][id]
+    cvint = int(currentValue)
+    cvint = cvint + integer
+
+    new_values = {f"userHardware.{id}": cvint}
+    db2[name].update_one(query, { "$set": new_values})
+
     return jsonify({'status': True, 'number': new_avail})
 
 @app.route('/checkin', methods=['POST'])
 def checkin():
     name = request.json['name']
     number = request.json['change']
+    id = request.json['userId']
+   
     integer = int(number)
     document = db2[name].find_one({'name': name})
     avail = document['availability']
     cap = document['capacity']
-    if integer + avail > cap:
-        return jsonify({'status': False})
+
     query = {'name': name}
+    
+    result = db2[name].find_one(query)
+    currentValue = result["userHardware"][id]
+    cvint = int(currentValue)
+    if integer > cvint:
+        return jsonify({'status': False, 'message': 'Error: Cannot check in more than user has checked out'})
+
+    cvint = cvint - integer
+
+    new_values = {f"userHardware.{id}": cvint}
+    db2[name].update_one(query, { "$set": new_values})
+
+    if integer + avail > cap:
+        return jsonify({'status': False, 'message': 'Check-in request exceeds the capacity'})
     new_avail = avail + integer
     new_values = {'$set': {'availability': new_avail}}
     db2[name].update_one(query, new_values)
+
+
     return jsonify({'status': True, 'number': new_avail})
 
 @app.route('/create', methods=['POST'])
@@ -169,7 +209,7 @@ def create():
     name = request.json['name']
     description = request.json['description']
     if project_collection.find_one({'id': id}):
-        return jsonify({'error': 'Project ID already exists'})
+        return jsonify({'status': False,'message': 'Project ID already exists'})
     
     post = {
         "id": id,

@@ -63,7 +63,7 @@ function ProjectCard(props){
     <CardContent>
       <ProjectTitle title={project.name} />
       <ProjectAuthorized authorized={project.Users} />
-      <ProjectHardware hardware={availableHardware} isMember={isMember}/>
+      <ProjectHardware hardware={availableHardware} isMember={isMember} userId={userId}/>
       <ProjectButtons isMember={isMember} onJoin={handleJoin} onLeave={handleLeave} />
     </CardContent>
   </Card>
@@ -83,18 +83,18 @@ function ProjectAuthorized(props) {
 }
 
 function ProjectHardware(props) {
-  const {hardware, isMember} = props;
+  const {hardware, isMember, userId} = props;
   return(
     <div>
           {hardware.map(item =>(
-              <HardwareItem key ={item} name ={item} isMember ={isMember}/>
+              <HardwareItem key ={item} name ={item} isMember ={isMember} userId={userId}/>
           ))}
     </div>
   );
 }
 
 function HardwareItem(props){
-  const {name, isMember} = props;
+  const {name, isMember, userId} = props;
   const [numHardware, setNumHardware] = useState();
   const [availHardware, setAvailHardware] = useState();
   const [change, setChange] = useState(0);
@@ -117,7 +117,8 @@ function HardwareItem(props){
       event.preventDefault();
       axios.post('http://localhost:5000/checkouthardware',{
         change: change,
-        name: name
+        name: name,
+        userId: userId
       })
       .then(response =>{
         console.log(response.data);
@@ -135,18 +136,18 @@ function HardwareItem(props){
 
   const handleCheckin = (event) =>{
     if(isMember){
-      // setAvailHardware(parseInt(availHardware) + parseInt(change));
       event.preventDefault();
       axios.post('http://localhost:5000/checkin',{
         change: change,
-        name: name
+        name: name,
+        userId: userId
       })
       .then(response =>{
         console.log(response.data);
         if(response.data.status === true){
           setAvailHardware(response.data.number);
         }else{
-          alert("Check-in request exceeds the capacity")
+          alert(response.data.message);
         }
       })
       .catch(error => {
@@ -258,6 +259,11 @@ export default function HomePage() {
     })
     .then(response => {
       console.log(response.data);
+      if(response.data.status === false){
+        alert(response.data.message)
+      }else{
+        alert("Project successfully created")
+      }
     })
     .catch(error =>{
       console.error(error);

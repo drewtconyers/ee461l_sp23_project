@@ -18,6 +18,8 @@ export default function Login() {
       console.log(response.data.success);
       if(response.data.success === true){
         navigate("/home", {state:{userId: userId}});
+      }else{
+        alert("incorrect userID or password")
       }
     })
     .catch(error =>{
