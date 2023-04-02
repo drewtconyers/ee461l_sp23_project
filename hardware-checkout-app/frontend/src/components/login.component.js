@@ -1,26 +1,33 @@
 import React, { useState } from 'react';
+import { useNavigate } from "react-router-dom"
 import axios from 'axios';
+import './style.css';
 
 export default function Login() {
   const[userId, setUserId] = useState("");
-  const[username, setUsername] = useState("");
   const[password, setPassword] = useState("");
+  const navigate =useNavigate();
   const handleSubmit = (event) =>{
     event.preventDefault();
 
     axios.post('http://localhost:5000/login',{
       userId: userId,
-      username: username,
       password: password
     })
     .then(response => {
-      console.log(response.data);
+      console.log(response.data.success);
+      if(response.data.success === true){
+        navigate("/home", {state:{userId: userId}});
+      }
     })
     .catch(error =>{
       console.error(error);
     })
   }
+
     return (
+      <div className="auth-wrapper">
+      <div className="auth-inner">
       <form onSubmit={handleSubmit}>
         <h3>Login</h3>
 
@@ -31,16 +38,6 @@ export default function Login() {
             className="form-control"
             placeholder="Enter User ID"
             onChange={event => setUserId(event.target.value)}
-          />
-        </div>
-
-        <div className="mb-3">
-          <label>Username</label>
-          <input
-            type="text"
-            className="form-control"
-            placeholder="Enter username"
-            onChange={event => setUsername(event.target.value)}
           />
         </div>
 
@@ -60,5 +57,7 @@ export default function Login() {
           </button>
         </div>
       </form>
+      </div>
+      </div>
     )
   }
